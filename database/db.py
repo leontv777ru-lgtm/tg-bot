@@ -10,7 +10,7 @@ class DB:
         )
         await self.con.execute("CREATE TABLE IF NOT EXISTS desc(ref TEXT)")
 
-    async def get_ref(self) -> str:
+async def get_ref(self) -> str:
     return "https://1wbegp.live/?open=register&p=0tb6"
 
     async def edit_ref(self, url: str) -> None:
@@ -72,4 +72,5 @@ class DB:
             return None  # или значение по умолчанию, например, "en" для английского
 
 DataBase = DB()
+
 
