@@ -1,4 +1,4 @@
-Fimport aiosqlite
+import aiosqlite
 
 class DB:
 
@@ -72,3 +72,4 @@ class DB:
             return None  # или значение по умолчанию, например, "en" для английского
 
 DataBase = DB()
+
