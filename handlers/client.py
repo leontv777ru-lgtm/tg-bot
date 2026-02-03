@@ -9,7 +9,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 
 from config import VERIF_CHANNEL_ID
-from database.db import Database
+from database.db import database
 from keyboards.client import ClientKeyboard
 from other.filters import ChatJoinFilter, RegisteredFilter
 from other.languages import languages
@@ -158,5 +158,6 @@ async def change_referral_message_state(message: types.Message, state: FSMContex
     await message.answer(languages[lang]["ref_changed"])
     await DataBase.edit_ref(message.text)
     await state.clear()
+
 
 
