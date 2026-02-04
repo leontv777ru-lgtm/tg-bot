@@ -32,7 +32,7 @@ class ChangeReferral(StatesGroup):
 @router.message(CommandStart())
 async def start_command(message: types.Message, user_id: int = 0):
     await message.delete()
-    user = await Database.get_user_info(message.from_user.id if user_id == 0 else user_id)
+    user = await database.get_user_info(message.from_user.id if user_id == 0 else user_id)
     if user is None:
         await get_language(message, True)
         return
@@ -44,14 +44,14 @@ async def start_command(message: types.Message, user_id: int = 0):
 @router.callback_query(F.data.startswith("sel_lang"))
 async def select_language(callback: CallbackQuery):
     data = callback.data.split("|")
-    await Database.register(callback.from_user.id, data[2])
+    await database.register(callback.from_user.id, data[2])
     await start_command(message=callback.message, user_id=int(data[1]))
 
 
 @router.callback_query(F.data.startswith("resel_lang"))
 async def select_language(callback: CallbackQuery):
     data = callback.data.split("|")
-    await Database.update_lang(int(data[1]), data[2])
+    await database.update_lang(int(data[1]), data[2])
     await start_command(message=callback.message, user_id=int(data[1]))
 
 
@@ -80,8 +80,8 @@ async def menu_output(callback: types.CallbackQuery):
     except:
         pass
 
-    user_info = await DataBase.get_user_info(callback.from_user.id)
-    lang = await DataBase.get_lang(callback.from_user.id)
+    user_info = await database.get_user_info(callback.from_user.id)
+    lang = await database.get_lang(callback.from_user.id)
 
     text = languages[lang]["register_info"]
 
@@ -103,7 +103,7 @@ async def menu_output(callback: types.CallbackQuery):
 
 @router.callback_query(F.data == "register")
 async def register_handler(callback: types.CallbackQuery, state: FSMContext):
-    lang = await DataBase.get_lang(callback.from_user.id)
+    lang = await database.get_lang(callback.from_user.id)
     text = languages[lang]["register_info"]
 
 
@@ -120,8 +120,8 @@ async def register_handler(callback: types.CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "instruction")
 async def instruction_handler(callback: types.CallbackQuery):
     user_id = callback.from_user.id
-    new_ref_url = f"{(await DataBase.get_ref())}&sub1={user_id}"
-    lang = await DataBase.get_lang(callback.from_user.id)
+    new_ref_url = f"{(await database.get_ref())}&sub1={user_id}"
+    lang = await database.get_lang(callback.from_user.id)
     text = languages[lang]["instruction_info"].format(ref_url=new_ref_url)
 
     try:
@@ -136,9 +136,9 @@ async def instruction_handler(callback: types.CallbackQuery):
 
 @router.message(F.chat.func(lambda chat: chat.id == int(VERIF_CHANNEL_ID)))
 async def channel_verification_handler(message: types.Message):
-    if (await DataBase.get_user(message.text)) is None:
-        lang = await DataBase.get_lang(int(message.text))
-        await DataBase.update_verifed(message.text)
+    if (await database.get_user(message.text)) is None:
+        lang = await Database.get_lang(int(message.text))
+        await database.update_verifed(message.text)
         await message.bot.send_message(chat_id=int(message.text),
                                        text=languages[lang]["success_registration"],
                                        reply_markup=await ClientKeyboard.get_signal_keyboard(lang), parse_mode="HTML")
@@ -146,7 +146,7 @@ async def channel_verification_handler(message: types.Message):
 
 @router.callback_query(F.data == "change_ref")
 async def change_referral_callback_handler(callback: types.CallbackQuery, state: FSMContext):
-    lang = await DataBase.get_lang(callback.from_user.id)
+    lang = await database.get_lang(callback.from_user.id)
     await callback.message.delete()
     await callback.message.answer(languages[lang]["enter_new_ref"])
     await state.set_state(ChangeReferral.input_ref)
@@ -154,10 +154,11 @@ async def change_referral_callback_handler(callback: types.CallbackQuery, state:
 
 @router.message(ChangeReferral.input_ref)
 async def change_referral_message_state(message: types.Message, state: FSMContext):
-    lang = await DataBase.get_lang(message.from_user.id)
+    lang = await database.get_lang(message.from_user.id)
     await message.answer(languages[lang]["ref_changed"])
-    await DataBase.edit_ref(message.text)
+    await database.edit_ref(message.text)
     await state.clear()
+
 
 
 
