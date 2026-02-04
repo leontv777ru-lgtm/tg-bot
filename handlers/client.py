@@ -32,7 +32,7 @@ class ChangeReferral(StatesGroup):
 @router.message(CommandStart())
 async def start_command(message: types.Message, user_id: int = 0):
     await message.delete()
-    user = await DataBase.get_user_info(message.from_user.id if user_id == 0 else user_id)
+    user = await Database.get_user_info(message.from_user.id if user_id == 0 else user_id)
     if user is None:
         await get_language(message, True)
         return
@@ -44,14 +44,14 @@ async def start_command(message: types.Message, user_id: int = 0):
 @router.callback_query(F.data.startswith("sel_lang"))
 async def select_language(callback: CallbackQuery):
     data = callback.data.split("|")
-    await DataBase.register(callback.from_user.id, data[2])
+    await Database.register(callback.from_user.id, data[2])
     await start_command(message=callback.message, user_id=int(data[1]))
 
 
 @router.callback_query(F.data.startswith("resel_lang"))
 async def select_language(callback: CallbackQuery):
     data = callback.data.split("|")
-    await DataBase.update_lang(int(data[1]), data[2])
+    await Database.update_lang(int(data[1]), data[2])
     await start_command(message=callback.message, user_id=int(data[1]))
 
 
@@ -158,6 +158,7 @@ async def change_referral_message_state(message: types.Message, state: FSMContex
     await message.answer(languages[lang]["ref_changed"])
     await DataBase.edit_ref(message.text)
     await state.clear()
+
 
 
 
