@@ -1,6 +1,9 @@
 import aiosqlite
 
 class Database:
+    def __init__(self):
+        self.con = None
+
     async def on_startup(self):
         self.con = await aiosqlite.connect("database/user.db")
 
@@ -30,26 +33,23 @@ class Database:
 
         await self.con.commit()
 
+    # ---------- REF ----------
+
     async def get_ref(self) -> str:
         cursor = await self.con.execute("SELECT ref FROM refs LIMIT 1")
         row = await cursor.fetchone()
         return row[0] if row else ""
 
     async def edit_ref(self, url: str):
-        await self.con.execute("UPDATE refs SET ref = ?", (url,))
+        await self.con.execute(
+            "UPDATE refs SET ref = ?",
+            (url,)
+        )
         await self.con.commit()
 
-    async def get_users_count(self) -> int:
-        cursor = await self.con.execute("SELECT COUNT(*) FROM users")
-        return (await cursor.fetchone())[0]
+    # ---------- USERS ----------
 
-    async def get_verified_users_count(self) -> int:
-        cursor = await self.con.execute(
-            "SELECT COUNT(*) FROM users WHERE verified = 'verified'"
-        )
-        return (await cursor.fetchone())[0]
-
-    async def register(self, user_id: int, language: str, verified="0"):
+    async def register(self, user_id: int, language: str, verified: str = "0"):
         try:
             await self.con.execute(
                 "INSERT INTO users (verified, user_id, lang) VALUES (?, ?, ?)",
@@ -59,7 +59,7 @@ class Database:
         except aiosqlite.IntegrityError:
             pass
 
-    async def update_verified(self, user_id: int, verified="verified"):
+    async def update_verified(self, user_id: int, verified: str = "verified"):
         await self.con.execute(
             "UPDATE users SET verified = ? WHERE user_id = ?",
             (verified, user_id)
@@ -76,6 +76,20 @@ class Database:
     async def get_user_info(self, user_id: int):
         return await self.get_user(user_id)
 
+    async def get_users(self):
+        cursor = await self.con.execute("SELECT * FROM users")
+        return await cursor.fetchall()
+
+    async def get_users_count(self) -> int:
+        cursor = await self.con.execute("SELECT COUNT(*) FROM users")
+        return (await cursor.fetchone())[0]
+
+    async def get_verified_users_count(self) -> int:
+        cursor = await self.con.execute(
+            "SELECT COUNT(*) FROM users WHERE verified = 'verified'"
+        )
+        return (await cursor.fetchone())[0]
+
     async def update_lang(self, user_id: int, language: str):
         await self.con.execute(
             "UPDATE users SET lang = ? WHERE user_id = ?",
@@ -89,4 +103,7 @@ class Database:
             (user_id,)
         )
         row = await cursor.fetchone()
-        return row[0] if row else None
+        return row[0] if row else "en"
+
+# 🔥 ЕДИНСТВЕННЫЙ ЭКЗЕМПЛЯР БД
+database = Database()
