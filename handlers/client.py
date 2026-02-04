@@ -137,7 +137,7 @@ async def instruction_handler(callback: types.CallbackQuery):
 @router.message(F.chat.func(lambda chat: chat.id == int(VERIF_CHANNEL_ID)))
 async def channel_verification_handler(message: types.Message):
     if (await database.get_user(message.text)) is None:
-        lang = await Database.get_lang(int(message.text))
+        lang = await database.get_lang(int(message.text))
         await database.update_verifed(message.text)
         await message.bot.send_message(chat_id=int(message.text),
                                        text=languages[lang]["success_registration"],
@@ -158,6 +158,7 @@ async def change_referral_message_state(message: types.Message, state: FSMContex
     await message.answer(languages[lang]["ref_changed"])
     await database.edit_ref(message.text)
     await state.clear()
+
 
 
 
