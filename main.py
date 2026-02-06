@@ -31,3 +31,23 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+import os
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+def run_http_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), SimpleHandler)
+    server.serve_forever()
+
+# запускаем HTTP сервер в отдельном потоке
+threading.Thread(target=run_http_server, daemon=True).start()
+
