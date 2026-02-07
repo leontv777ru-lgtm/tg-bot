@@ -66,4 +66,18 @@ class ClientKeyboard:
         )
         ikb.button(text=languages[lang]["back"], callback_data="back")
         ikb.adjust(1)
+
         return ikb.as_markup()
+        class ClientKeyboard:
+
+    @staticmethod
+    async def languages_board(prefix: str):
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="🇷🇺 Русский", callback_data=f"{prefix}_ru"),
+                InlineKeyboardButton(text="🇺🇸 English", callback_data=f"{prefix}_en")
+            ]
+        ])
+        return keyboard
