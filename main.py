@@ -1,30 +1,39 @@
 import asyncio
 import logging
+import sys
 
-from aiogram import Dispatcher, Bot
-
+from aiogram import Bot, Dispatcher
 from config import BOT_TOKEN
 from handlers.client import router as client_router
 from handlers.admin import router as admin_router
 from database.db import DataBase
 
-
 async def main():
     logging.basicConfig(
         level=logging.INFO,
-        format="[BOT] %(filename)s:%(lineno)d | %(levelname)s | %(message)s"
+        format="%(asctime)s | %(levelname)s | %(message)s",
+        stream=sys.stdout,
     )
+
+    if not BOT_TOKEN:
+        raise RuntimeError("BOT_TOKEN is not set")
 
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
-    dp.include_routers(client_router, admin_router)
+    dp.include_router(client_router)
+    dp.include_router(admin_router)
 
-    dp.startup.register(DataBase.on_startup)
+    await DataBase.on_startup()
 
-    await bot.delete_webhook(drop_pending_updates=True)
+    logging.info("Starting polling...")
     await dp.start_polling(bot)
 
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        logging.info("Bot stopped")
+    except Exception as e:
+        logging.exception("Fatal error")
+        raise
