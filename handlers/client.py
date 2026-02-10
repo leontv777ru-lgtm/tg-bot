@@ -37,8 +37,11 @@ async def start_command(message: types.Message, user_id: int = 0):
         await get_language(message, True)
         return
 
-    await message.answer(languages[user[2]]["welcome"].format(first_name=message.from_user.first_name),
-                         reply_markup=await ClientKeyboard.start_keyboard(user[2]), parse_mode="HTML")
+    await message.answer(
+    languages[user[2]]["welcome"].format(first_name=message.from_user.first_name),
+    reply_markup=await ClientKeyboard.start_keyboard(user[2]),
+    parse_mode="HTML"
+)
 
 
 @router.callback_query(F.data.startswith("sel_lang"))
@@ -158,3 +161,4 @@ async def change_referral_message_state(message: types.Message, state: FSMContex
     await message.answer(languages[lang]["ref_changed"])
     await DataBase.edit_ref(message.text)
     await state.clear()
+
