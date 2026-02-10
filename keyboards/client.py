@@ -23,4 +23,5 @@ class ClientKeyboard:
         ikb.button(text=languages[lang]["register"], callback_data="register")
         ikb.button(text=languages[lang]["instruction"], callback_data="instruction")
         ikb.button(text=languages[lang]["choose_lang"], callback_data="get_lang")
-        ikb.button(text="Help🆘"
+        ikb.button(text="Help🆘", url=SUPP)
+
