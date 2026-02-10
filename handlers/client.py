@@ -1,93 +1,84 @@
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.types import InlineKeyboardMarkup
+from aiogram import Router, types, F
+from aiogram.filters import CommandStart
+from aiogram.types import CallbackQuery, Message
+from aiogram.fsm.context import FSMContext
 
-from config import CHANNEL_URL, SUPP
+from database.db import DataBase
+from keyboards.client import ClientKeyboard
 from other.languages import languages
+from other.filters import ChatJoinFilter
 
-class ClientKeyboard:
+router = Router()
 
-    @staticmethod
-    async def start_keyboard(lang: str) -> InlineKeyboardMarkup:
-        ikb = InlineKeyboardBuilder()
+@router.message(CommandStart())
+async def start_command(message: Message, user_id: int = 0):
+    try:
+        await message.delete()
+    except:
+        pass
 
-        ikb.button(
-            text=languages[lang]["subscribe"],
-            url=CHANNEL_URL
-        )
-        ikb.button(
-            text=languages[lang]["check"],
-            callback_data="check"
-        )
+    user = await DataBase.get_user_info(
+        message.from_user.id if user_id == 0 else user_id
+    )
 
-        ikb.adjust(1)
-        return ikb.as_markup()
+    if user is None:
+        await get_language(message, True)
+        return
 
-    @staticmethod
-    async def menu_keyboard(user_info: list, lang: str) -> InlineKeyboardMarkup:
-        ikb = InlineKeyboardBuilder()
+    await message.answer(
+        languages[user[2]]["welcome"].format(
+            first_name=message.from_user.first_name
+        ),
+        reply_markup=await ClientKeyboard.start_keyboard(user[2]),
+        parse_mode="HTML"
+    )
 
-        ikb.button(
-            text=languages[lang]["register"],
-            callback_data="register"
-        )
-        ikb.button(
-            text=languages[lang]["instruction"],
-            callback_data="instruction"
-        )
-        ikb.button(
-            text=languages[lang]["choose_lang"],
-            callback_data="get_lang"
-        )
-        ikb.button(
-            text="Help 🆘",
-            url=SUPP
-        )
+@router.callback_query(F.data.startswith("sel_lang"))
+async def select_language(callback: CallbackQuery):
+    data = callback.data.split("|")
+    await DataBase.register(callback.from_user.id, data[2])
+    await start_command(callback.message, user_id=int(data[1]))
 
-        ikb.adjust(1)
-        return ikb.as_markup()
+@router.callback_query(F.data.startswith("resel_lang"))
+async def reselect_language(callback: CallbackQuery):
+    data = callback.data.split("|")
+    await DataBase.update_lang(int(data[1]), data[2])
+    await start_command(callback.message, user_id=int(data[1]))
 
-    @staticmethod
-    async def languages_board(prefix: str) -> InlineKeyboardMarkup:
-        ikb = InlineKeyboardBuilder()
+@router.callback_query(F.data == "get_lang")
+async def get_language(query: Message | CallbackQuery, first: bool = False):
+    msg = query.message if isinstance(query, CallbackQuery) else query
 
-        for lang in languages:
-            ikb.button(
-                text=languages[lang]["lang_name"],
-                callback_data=f"{prefix}|{lang}"
-            )
+    try:
+        await msg.delete()
+    except:
+        pass
 
-        ikb.adjust(2)
-        return ikb.as_markup()
+    prefix = (
+        f"sel_lang|{msg.from_user.id}"
+        if first
+        else f"resel_lang|{msg.from_user.id}"
+    )
 
-    @staticmethod
-    async def back_keyboard(lang: str) -> InlineKeyboardMarkup:
-        ikb = InlineKeyboardBuilder()
+    await msg.answer(
+        "Select language",
+        reply_markup=await ClientKeyboard.languages_board(prefix)
+    )
 
-        ikb.button(
-            text=languages[lang]["back"],
-            callback_data="back"
-        )
+@router.callback_query(F.data.in_(["back", "check"]), ChatJoinFilter())
+async def menu_output(callback: CallbackQuery):
+    try:
+        await callback.message.delete()
+    except:
+        pass
 
-        return ikb.as_markup()
+    user_info = await DataBase.get_user_info(callback.from_user.id)
+    lang = await DataBase.get_lang(callback.from_user.id)
 
-    @staticmethod
-    async def register_keyboard(callback, lang: str) -> InlineKeyboardMarkup:
-        ikb = InlineKeyboardBuilder()
+    await callback.message.answer(
+        languages[lang]["welcome_message"],
+        reply_markup=await ClientKeyboard.menu_keyboard(user_info, lang),
+        parse_mode="HTML"
+    )
 
-        ikb.button(
-            text=languages[lang]["back"],
-            callback_data="back"
-        )
-
-        return ikb.as_markup()
-
-    @staticmethod
-    async def get_signal_keyboard(lang: str) -> InlineKeyboardMarkup:
-        ikb = InlineKeyboardBuilder()
-
-        ikb.button(
-            text=languages[lang]["get_signal"],
-            callback_data="get_signal"
-        )
-
-        return ikb.as_markup()
+    await callback.answer()
